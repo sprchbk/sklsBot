@@ -1,6 +1,7 @@
+import inlineMessages.BasicAnsw;
+import inlineMessages.States;
 import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
-import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendContact;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -10,16 +11,15 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SkilsBot extends AbilityBot {
-    private static String BOT_USER = "@username" /* proxy user */;
-    private static String BOT_PASSWORD = "pass" /* proxy password */;
+
+    private static String BOT_USER = "@sbrbnk_skilsbot" /* proxy user */;
+    private static String BOT_PASSWORD = "699831604:AAEcQZc5CPT8wFI02vrj9NNiIptVlIOzu2g" /* proxy password */;
 
     protected SkilsBot(DefaultBotOptions botOptions) {
         super(BOT_USER, BOT_PASSWORD, botOptions);
@@ -31,15 +31,20 @@ public class SkilsBot extends AbilityBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+        States state = null;
+        String name = "";
+
         if(update.hasMessage() && update.getMessage().isCommand())
         {
             System.out.println(update.getMessage().getText());
         }
+
         if(update.hasMessage() && update.getMessage().hasLocation())
         {
             Location loc = update.getMessage().getLocation();
             System.out.println(loc.toString());
         }
+
         if(update.hasMessage() && update.getMessage().hasContact())
         {
             Contact contact = update.getMessage().getContact();
@@ -50,84 +55,43 @@ public class SkilsBot extends AbilityBot {
 
         if (update.hasMessage() && update.getMessage().hasText()) {
             System.out.println(update.getMessage().toString());
+            SendMessage message = null;
+            if(update.getMessage().getText().equalsIgnoreCase("/start"))
+            {
+                 message = new SendMessage() // Create a SendMessage object with mandatory fields
+                        .setChatId(update.getMessage().getChatId())
+                        .setText("Добрый день!\n" +
+                                "\n" +
+                                "Как я могу к Вам обращаться?");
+                 state = States.getName;
+            }
+            else {
+                if(state!=null && state.equals(States.getName)) {
+                    name = update.getMessage().getText();
 
-            KeyboardButton kbL = new KeyboardButton();
-            kbL.setRequestLocation(true);
-            kbL.setText("Location");
+                    message = new SendMessage() // Create a SendMessage object with mandatory fields
+                            .setChatId(update.getMessage().getChatId())
+                            .setText(name + ",вы находитесь в отделении Сбербанка?");
 
+                    InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
+                    List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+                    List<InlineKeyboardButton> rowInline = new ArrayList<>();
 
-            KeyboardButton kbPh = new KeyboardButton();
-            kbPh.setRequestContact(true);
-            kbPh.setText("Phone");
+                    rowInline.add(new BasicAnsw().getButtonYes().setCallbackData("clientInOffice"));
+                    rowInline.add(new BasicAnsw().getButtonNo().setCallbackData("clientNotInOffice"));
 
-            KeyboardButton kbCtg = new KeyboardButton();
-            kbCtg.setText("Categories");
+                    message.setReplyMarkup(markupInline.setKeyboard(rowsInline));
+                }
 
-
-            List<KeyboardButton> keybuttons = new ArrayList<KeyboardButton>();
-            keybuttons.add(kbL);
-            keybuttons.add(kbPh);
-            keybuttons.add(kbCtg);
-            keybuttons.add(kbCtg);
-
-            //INLINE
-            KeyboardRow kr = new KeyboardRow();
-            kr.addAll(keybuttons);
-
-            List<KeyboardRow> kl = new ArrayList<KeyboardRow>();
-            kl.add(kr);
-
-            ReplyKeyboardMarkup rk = new ReplyKeyboardMarkup();
-            rk.setKeyboard(kl);
-            rk.setKeyboard(kl);
-
-/*
-            InlineKeyboardButton ikbL = new InlineKeyboardButton();
-            ikbL.setText("Оставить жалобу").setCallbackData("zalobaDetect");
-            InlineKeyboardButton ikbL2 = new InlineKeyboardButton();
-            ikbL.setText("Сберпомощ").setCallbackData("sberHelp");
-
-
-
-            List<InlineKeyboardButton> ikeybuttons1 = new ArrayList<>();
-            ikeybuttons1.add(ikbL);
-            List<InlineKeyboardButton> ikeybuttons2 = new ArrayList<>();
-            ikeybuttons2.add(ikbL2);
-
-
-
-            List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-            rowsInline.add(ikeybuttons1);
-            rowsInline.add(ikeybuttons2);
-
-            InlineKeyboardMarkup ikM = new InlineKeyboardMarkup();
-            ikM.setKeyboard(rowsInline);
-
-*/
-            InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
-            List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-            List<InlineKeyboardButton> rowInline = new ArrayList<>();
-            rowInline.add(new InlineKeyboardButton().setText("Update message text").setCallbackData("update_msg_text"));
-            // Set the keyboard to the markup
-            rowsInline.add(rowInline);
-            // Add it to the message
-            markupInline.setKeyboard(rowsInline);
-
-
-            SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
-                    .setChatId(update.getMessage().getChatId())
-                    .setText("Now I need location");
-            //.setReplyMarkup(ikM);
-            //.setReplyMarkup(rk);
-            //.setReplyMarkup(ikeybuttons);
-
-            message.setReplyMarkup(markupInline);
+            }
 
             try {
-                execute(message); // Call method to send the message
+                if(message!=null)
+                    execute(message); // Call method to send the message
             } catch (TelegramApiException e) {
                 e.printStackTrace();
             }
+
         } else if (update.hasCallbackQuery()) {
             String call_data = update.getCallbackQuery().getData();
             long message_id = update.getCallbackQuery().getMessage().getMessageId();

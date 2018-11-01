@@ -34,6 +34,7 @@ public class Main
             SkilsBot bot = new SkilsBot(botOptions);
 
             botsApi.registerBot(bot);
+
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
