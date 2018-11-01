@@ -12,4 +12,9 @@ public class BasicAnsw {
     {
        return new InlineKeyboardButton().setText("Нет");
     }
+
+    public InlineKeyboardButton getButtonCustom(String nameOfButton,String CallBack)
+    {
+       return new InlineKeyboardButton().setText(nameOfButton).setCallbackData(CallBack);
+    }
 }

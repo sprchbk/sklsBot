@@ -1,5 +1,5 @@
 package inlineMessages;
 
 public enum States {
-    getName,getOfice,inOffice,notinOffice;
+    getName,getOfice,inOffice,notinOffice,setCat,setAnswChannel;
 }

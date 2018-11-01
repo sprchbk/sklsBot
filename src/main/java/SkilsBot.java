@@ -1,3 +1,6 @@
+import Categories.CategoriesAnswerChannel;
+import Categories.CategoriesNotInOffice;
+import callBacks.Clbks;
 import inlineMessages.BasicAnsw;
 import inlineMessages.States;
 import org.telegram.abilitybots.api.bot.AbilityBot;
@@ -7,13 +10,17 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Contact;
 import org.telegram.telegrambots.meta.api.objects.Location;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class SkilsBot extends AbilityBot {
@@ -53,8 +60,13 @@ public class SkilsBot extends AbilityBot {
         {
             Contact contact = update.getMessage().getContact();
             System.out.println(contact.toString());
-            System.out.println(update.getMessage().getChatId().toString());
             sendContactToAdmin(contact);
+
+            SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
+                    .setChatId(update.getMessage().getChatId())
+                    .setText("Спасибо");
+
+            sendMessW(message);
         }
 
         if (update.hasMessage() && update.getMessage().hasText()) {
@@ -80,11 +92,18 @@ public class SkilsBot extends AbilityBot {
                     InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
                     List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
                     List<InlineKeyboardButton> rowInline = new ArrayList<>();
+                    rowInline.add(new BasicAnsw().getButtonYes().setCallbackData("setStatesInOffices"));
+                    rowInline.add(new BasicAnsw().getButtonNo().setCallbackData("setStatesNotInOffices"));
+                    // Set the keyboard to the markup
+                    rowsInline.add(rowInline);
+                    // Add it to the message
+                    markupInline.setKeyboard(rowsInline);
+                    message.setReplyMarkup(markupInline);
 
-                    rowInline.add(new BasicAnsw().getButtonYes().setCallbackData("clientInOffice"));
-                    rowInline.add(new BasicAnsw().getButtonNo().setCallbackData("clientNotInOffice"));
+                }
+                else if(state.equals(States.inOffice))
+                {
 
-                    message.setReplyMarkup(markupInline.setKeyboard(rowsInline));
                 }
 
             }
@@ -100,17 +119,44 @@ public class SkilsBot extends AbilityBot {
             String call_data = update.getCallbackQuery().getData();
             long message_id = update.getCallbackQuery().getMessage().getMessageId();
             long chat_id = update.getCallbackQuery().getMessage().getChatId();
+            Clbks callBack = new Clbks(call_data);
+            System.out.println("call_data:"+call_data);
+            state =  callBack.getStt()==null?States.getName:callBack.getStt();
 
-            if (call_data.equals("update_msg_text")) {
-                String answer = "Updated message text";
-                EditMessageText new_message = new EditMessageText()
-                        .setChatId(chat_id)
-                        .setMessageId(Math.toIntExact(message_id))
-                        .setText(answer);
-                try {
-                    execute(new_message);
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
+            if(state == States.notinOffice)
+            {
+                clearInlineButtons(chat_id,Math.toIntExact(message_id),"Ваше расположение: Вне офиса");
+                SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
+                        .setChatId(update.getCallbackQuery().getMessage().getChatId())
+                        .setText("Выберите интересующий вас раздел")
+                        .setReplyMarkup(new CategoriesNotInOffice().getMarkupInline());
+
+                sendMessW(message);
+                state = States.setCat;
+            }
+            else if(state == States.setCat)
+            {
+                clearInlineButtons(chat_id,Math.toIntExact(message_id),"Регистрируем сообщение по категории: Качество услуг отделения Сбербанка");
+
+                SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
+                        .setChatId(update.getCallbackQuery().getMessage().getChatId())
+                        .setText("Какой способ свзяи для вас предпочительнее")
+                        .setReplyMarkup(new CategoriesAnswerChannel().getMarkupInline());
+                sendMessW(message);
+                state = States.setAnswChannel;
+            }
+            else if(state == States.setAnswChannel) {
+                if (callBack.getCat() != null) {
+                    if (callBack.getCat().equalsIgnoreCase("setMail")) {
+                    } else {
+                        SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
+                                .setChatId(update.getCallbackQuery().getMessage().getChatId())
+                                .setText("Нажмите 'Отправить' и Ваше обращение уйдет на рассмотрение. Наш сотрудник свяжется указанным Вами способом")
+                                .setReplyMarkup(getPhoneKeyEnd());
+                        sendMessW(message);
+                    }
+                } else{
+                    System.out.println("NullCat");
                 }
             }
         }
@@ -126,6 +172,7 @@ public class SkilsBot extends AbilityBot {
                 .setPhoneNumber(cnt.getPhoneNumber())
                 .setFirstName(cnt.getFirstName())
                 .setLastName(cnt.getLastName());
+
         try {
             execute(message);
             execute(sndCntc);
@@ -135,6 +182,31 @@ public class SkilsBot extends AbilityBot {
 
     }
 
+    public void sendCategories(Long chatId){
+
+
+    }
+
+    public void sendMessW(SendMessage mes){
+        try {
+            if(mes!=null)
+                execute(mes); // Call method to send the message
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void clearInlineButtons(Long chatId, Integer mesId, String changedText){
+        EditMessageText new_message = new EditMessageText()
+                .setChatId(chatId)
+                .setMessageId(Math.toIntExact(mesId))
+                .setText(changedText);
+        try {
+            execute(new_message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public String getBotUsername() {
@@ -146,4 +218,25 @@ public class SkilsBot extends AbilityBot {
         return BOT_PASSWORD;
     }
 
+    public ReplyKeyboardMarkup getPhoneKeyEnd(){
+        KeyboardButton kbPh = new KeyboardButton();
+        kbPh.setRequestContact(true);
+        kbPh.setText("Отправить");
+
+        List<KeyboardButton> keybuttons = new ArrayList<KeyboardButton>();
+        keybuttons.add(kbPh);
+
+        KeyboardRow kr = new KeyboardRow();
+        kr.addAll(keybuttons);
+
+        List<KeyboardRow> kl = new ArrayList<KeyboardRow>();
+        kl.add(kr);
+
+        ReplyKeyboardMarkup kM = new ReplyKeyboardMarkup();
+
+        kM.setKeyboard(kl);
+        kM.setOneTimeKeyboard(true);
+
+        return kM;
+    }
 }
