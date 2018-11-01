@@ -37,6 +37,8 @@ public class SkilsBot extends AbilityBot {
     String mail = "";
     String cat = "";
     VspApi vspApi = new VspApi();
+    String userMessage = "";
+    Boolean inOffice = false;
 
     protected SkilsBot(DefaultBotOptions botOptions) {
         super(BOT_USER, BOT_PASSWORD, botOptions);
@@ -67,9 +69,16 @@ public class SkilsBot extends AbilityBot {
             System.out.println(contact.toString());
             sendContactToAdmin(contact);
 
+            String messageText = "Ваше обращение отправлено.\n" +
+                    "В ближайшее время с Вами свяжется наш сотрудник.";
+            if(!inOffice)
+                messageText = "Ваше обращение отправлено.\n" +
+                        "Наш сотрудник свяжется с Вами в ближайшее время.";
+
+
             SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
                     .setChatId(update.getMessage().getChatId())
-                    .setText("Спасибо");
+                    .setText(messageText);
 
             sendMessW(message);
         }
@@ -92,7 +101,7 @@ public class SkilsBot extends AbilityBot {
 
                     message = new SendMessage() // Create a SendMessage object with mandatory fields
                             .setChatId(update.getMessage().getChatId())
-                            .setText(name + ",вы находитесь в отделении Сбербанка?");
+                            .setText(name + ", вы находитесь в отделении Сбербанка?");
 
                     InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
                     List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
@@ -119,10 +128,8 @@ public class SkilsBot extends AbilityBot {
                     } else {
                         message = new SendMessage()
                                 .setChatId(update.getMessage().getChatId())
-                                .setText("Определено ВСП: "+office.getVspName()+"\n"+
-                                        "Выберите интересующий вас раздел")
-                                .setReplyMarkup(new CategoriesNotInOffice().getMarkupInline());
-                        state = States.setCat;
+                                .setText("Чем я могу Вам помочь?");
+                        state = States.setMess;
                     }
                 }  else if(state == States.notinOffice)
                 {
@@ -131,15 +138,37 @@ public class SkilsBot extends AbilityBot {
                             .setText("Выберите интересующий вас раздел")
                             .setReplyMarkup(new CategoriesNotInOffice().getMarkupInline());
 
-                    sendMessW(message);
+                   // sendMessW(message);
                     state = States.setCat;
                 }else if(state == States.getMail) {
                     mail = update.getMessage().getText();
                     sendMailToAdmin();
+                    String messageText = "Ваше обращение отправлено.\n" +
+                            "В ближайшее время с Вами свяжется наш сотрудник.";
+                    if(!inOffice)
+                        messageText = "Ваше обращение отправлено.\n" +
+                                "Наш сотрудник свяжется с Вами в ближайшее время.";
+
                     message = new SendMessage() // Create a SendMessage object with mandatory fields
                             .setChatId(update.getMessage().getChatId())
-                            .setText("Спасибо");
+                            .setText(messageText);
 
+                }
+                else if(state == States.setMess){
+                    userMessage = update.getMessage().getText();
+
+
+
+                    if(!inOffice) {
+                        message = new SendMessage() // Create a SendMessage object with mandatory fields
+                                .setChatId(update.getMessage().getChatId())
+                                .setText("Выберите удобный для Вас тип связи")
+                                .setReplyMarkup(new CategoriesAnswerChannel().getMarkupInline());
+
+                        state = States.setCat;
+                    }
+                    else
+                        state = States.setAnswChannel;
                 }
 
             }
@@ -161,13 +190,14 @@ public class SkilsBot extends AbilityBot {
 
             if(state == States.notinOffice)
             {
-                clearInlineButtons(chat_id,Math.toIntExact(message_id),"Ваше расположение: Вне офиса");
+                clearInlineButtons(chat_id,Math.toIntExact(message_id),"Вы не находитесь в офисе ");
                 SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
                         .setChatId(update.getCallbackQuery().getMessage().getChatId())
                         .setText("Выберите интересующий вас раздел")
                         .setReplyMarkup(new CategoriesNotInOffice().getMarkupInline());
 
                 sendMessW(message);
+
                 state = States.setCat;
             }
             else if(state == States.setCat)
@@ -177,10 +207,9 @@ public class SkilsBot extends AbilityBot {
 
                 SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
                         .setChatId(update.getCallbackQuery().getMessage().getChatId())
-                        .setText("Какой способ свзяи для вас предпочительнее")
-                        .setReplyMarkup(new CategoriesAnswerChannel().getMarkupInline());
+                        .setText("Чем я могу Вам помочь?");
                 sendMessW(message);
-                state = States.setAnswChannel;
+                state = States.setMess;
             }
             else if(state == States.inOffice)
             {
@@ -191,16 +220,19 @@ public class SkilsBot extends AbilityBot {
                 sendMessW(message);
                 state = States.getOfice;
             }
+            else if(state == States.setMess) {
+
+            }
             else if(state == States.setAnswChannel) {
                 if (callBack.getCat() != null) {
                     if (callBack.getCat().equalsIgnoreCase("setMail")) {
-                        clearInlineButtons(chat_id,Math.toIntExact(message_id),"Отправьте свой электронный адрес и Ваше обращение уйдет на рассмотрение. Наш сотрудник отправит Вам официальный ответ");
+                        clearInlineButtons(chat_id,Math.toIntExact(message_id),"Введите адрес электронный почты");
                         state = States.getMail;
                     } else {
                         clearInlineButtons(chat_id,Math.toIntExact(message_id),"Канал связи: " + (callBack.getCat().equalsIgnoreCase("setPhone")?"Звонок сотрудника":"Чат"));
                         SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
                                 .setChatId(update.getCallbackQuery().getMessage().getChatId())
-                                .setText("Нажмите 'Отправить' и Ваше обращение уйдет на рассмотрение. Наш сотрудник свяжется указанным Вами способом")
+                                .setText("Нажмите 'Отправить номер телефона'")
                                 .setReplyMarkup(getPhoneKeyEnd());
                         sendMessW(message);
                         state = (callBack.getCat().equalsIgnoreCase("setPhone")?States.finalPhone:States.finalChat);
@@ -217,10 +249,12 @@ public class SkilsBot extends AbilityBot {
         SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
                 .setChatId(admId)
                 .setText("Зарегистрировано новое обращение\n" +
+                        "Клиент находится: "+(inOffice?"не ВСП":"в банке")+"\n" +
+                        "Имя для обращения: " + name +"\n"+
                         "Канал связи: " + (state == States.finalPhone?"Звонок":"Чат") +"\n"+
                         "Категория: " + cat +"\n"+
                         "Сообщение:\n" +
-                        "[текст сообщения]"
+                        userMessage
                 );
         SendContact sndCntc = new SendContact()
                 .setChatId(admId)
@@ -241,9 +275,11 @@ public class SkilsBot extends AbilityBot {
         SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
                 .setChatId(admId)
                 .setText("Зарегистрировано новое обращение\n" +
+                        "Клиент находится: "+(inOffice?"не ВСП":"в банке")+"\n" +
+                        "Имя для обращения: " + name +"\n"+
                         "Ответ на почту: " + mail +"\n"+
                         "Сообщение:\n" +
-                        "[текст сообщения]"
+                        userMessage
                 );
 
         sendMessW(message);
@@ -288,7 +324,7 @@ public class SkilsBot extends AbilityBot {
     public ReplyKeyboardMarkup getPhoneKeyEnd(){
         KeyboardButton kbPh = new KeyboardButton();
         kbPh.setRequestContact(true);
-        kbPh.setText("Отправить");
+        kbPh.setText("Отправить номер телефона");
 
         List<KeyboardButton> keybuttons = new ArrayList<KeyboardButton>();
         keybuttons.add(kbPh);
