@@ -17,9 +17,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SkilsBot extends AbilityBot {
+//    private static String BOT_USER = "@username" /* proxy user */;
+//    private static String BOT_PASSWORD = "pass" /* proxy password */;
 
-    private static String BOT_USER = "@sbrbnk_skilsbot" /* proxy user */;
-    private static String BOT_PASSWORD = "699831604:AAEcQZc5CPT8wFI02vrj9NNiIptVlIOzu2g" /* proxy password */;
+    private static String BOT_USER = "@sbrbnk_skilsbot";
+    private static String BOT_PASSWORD = "699831604:AAEcQZc5CPT8wFI02vrj9NNiIptVlIOzu2g";
+
+    States state = States.getName;
+    String name = "";
 
     protected SkilsBot(DefaultBotOptions botOptions) {
         super(BOT_USER, BOT_PASSWORD, botOptions);
@@ -31,8 +36,7 @@ public class SkilsBot extends AbilityBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        States state = null;
-        String name = "";
+
 
         if(update.hasMessage() && update.getMessage().isCommand())
         {
@@ -66,7 +70,7 @@ public class SkilsBot extends AbilityBot {
                  state = States.getName;
             }
             else {
-                if(state!=null && state.equals(States.getName)) {
+                if(state.equals(States.getName)) {
                     name = update.getMessage().getText();
 
                     message = new SendMessage() // Create a SendMessage object with mandatory fields
