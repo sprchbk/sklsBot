@@ -29,9 +29,12 @@ public class Clbks {
             {"setCatAnother", States.setCat},
             {"setMail", States.setAnswChannel},
             {"setContact", States.setAnswChannel},
-            {"setPhone", States.setAnswChannel}
+            {"setPhone", States.setAnswChannel},
+            {"setBad", States.gotFeedBack},
+            {"setGood", States.gotFeedBack},
+            {"setThank", States.gotFeedBack},
+            {"closeTicket", States.getFeedBack}
     }).collect(Collectors.toMap(kv -> (String) kv[0], kv -> (States) kv[1]));
-
 
     public Clbks(String clbk){
         if(claStates.containsKey(clbk)) {
