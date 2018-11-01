@@ -3,6 +3,8 @@ import Categories.CategoriesNotInOffice;
 import callBacks.Clbks;
 import inlineMessages.BasicAnsw;
 import inlineMessages.States;
+import model.Vsp;
+import modelApi.VspApi;
 import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.api.methods.send.SendContact;
@@ -32,6 +34,7 @@ public class SkilsBot extends AbilityBot {
 
     States state = States.getName;
     String name = "";
+    VspApi vspApi = new VspApi();
 
     protected SkilsBot(DefaultBotOptions botOptions) {
         super(BOT_USER, BOT_PASSWORD, botOptions);
@@ -101,9 +104,35 @@ public class SkilsBot extends AbilityBot {
                     message.setReplyMarkup(markupInline);
 
                 }
-                else if(state.equals(States.inOffice))
-                {
+                else if(state.equals(States.getOfice)) {
+                    String officeNum = update.getMessage().getText();
+                    Vsp office = vspApi.getVspById(officeNum);
+                    if (office == null) {
+                        message = new SendMessage()
+                                .setChatId(update.getMessage().getChatId())
+                                .setText("Нет данных о подразделении № "+officeNum+"\n"+
+                                        "Выберите интересующий вас раздел")
+                                .setReplyMarkup(new CategoriesNotInOffice().getMarkupInline());
+                        state = States.notinOffice;
+                    } else {
+                        message = new SendMessage()
+                                .setChatId(update.getMessage().getChatId())
+                                .setText("Определено ВСП: "+office.getVspName()+"\n"+
+                                        "Выберите интересующий вас раздел")
+                                .setReplyMarkup(new CategoriesNotInOffice().getMarkupInline());
 
+                        sendMessW(message);
+                        state = States.setCat;
+                    }
+                }  else if(state == States.notinOffice)
+                {
+                    message = new SendMessage() // Create a SendMessage object with mandatory fields
+                            .setChatId(update.getCallbackQuery().getMessage().getChatId())
+                            .setText("Выберите интересующий вас раздел")
+                            .setReplyMarkup(new CategoriesNotInOffice().getMarkupInline());
+
+                    sendMessW(message);
+                    state = States.setCat;
                 }
 
             }
@@ -144,6 +173,16 @@ public class SkilsBot extends AbilityBot {
                         .setReplyMarkup(new CategoriesAnswerChannel().getMarkupInline());
                 sendMessW(message);
                 state = States.setAnswChannel;
+            }
+            else if(state == States.inOffice)
+            {
+                clearInlineButtons(chat_id,Math.toIntExact(message_id),"Определяем номер подразделения Сбербанка");
+
+                SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
+                        .setChatId(update.getCallbackQuery().getMessage().getChatId())
+                        .setText("Введите номер подразделения, в котором вы находитесь в формате 0000/00000");
+                sendMessW(message);
+                state = States.getOfice;
             }
             else if(state == States.setAnswChannel) {
                 if (callBack.getCat() != null) {

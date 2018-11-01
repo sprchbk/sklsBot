@@ -2,6 +2,7 @@ package modelApi;
 
 import com.google.common.base.Charsets;
 import model.Vsp;
+import org.eclipse.collections.impl.set.mutable.primitive.SynchronizedShortSet;
 import org.json.*;
 import com.google.common.io.Resources;
 import java.io.IOException;
@@ -12,6 +13,14 @@ import java.util.List;
 
 public class VspApi {
     HashMap<String, Vsp> vspList;
+
+    public HashMap<String, Vsp> getVspList() {
+        if (this.vspList == null) {
+            loadVspList();
+        }
+        System.out.println(this.vspList.toString());
+        return this.vspList;
+    }
 
     public void loadVspList() {
         HashMap<String, Vsp> vspList = new HashMap<>();
@@ -25,7 +34,7 @@ public class VspApi {
                 Vsp vsp = new Vsp();
                 vsp.setVspName(vspObj.getString("NAME"));
                 vsp.setAmdins(getListFromStringArray(vspObj.getJSONArray("ADMIN_IDS")));
-                vspList.put(vspObj.getString("NAME"), vsp);
+                vspList.put(vspObj.getString("ID"), vsp);
             };
          } catch (IOException e) {
             e.printStackTrace();
@@ -43,7 +52,7 @@ public class VspApi {
     };
 
     public Vsp getVspById(String vspId) {
-        return vspList.get(vspId);
+        return getVspList().get(vspId);
     }
 
 }
