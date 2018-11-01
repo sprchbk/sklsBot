@@ -35,8 +35,24 @@ public class Clbks {
 
     public Clbks(String clbk){
         if(claStates.containsKey(clbk)) {
-            this.stt = claStates.get(clbk);
-            this.cat = clbk;
+            stt = claStates.get(clbk);
+            if(stt == States.setCat) {
+                switch (clbk) {
+                    case "setCatVSP":
+                        cat = "Качество услуг отделения Сбербанка";
+                        break;
+                    case "setCatProducts":
+                        cat = "Продукты Сбербанка";
+                        break;
+                    case "setCatAnother":
+                        cat = "Другое";
+                        break;
+                    default:
+                        cat = "undefined";
+                        break;
+                }
+            }else
+                cat = clbk;
         }
     }
 }

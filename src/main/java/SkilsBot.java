@@ -34,6 +34,8 @@ public class SkilsBot extends AbilityBot {
 
     States state = States.getName;
     String name = "";
+    String mail = "";
+    String cat = "";
     VspApi vspApi = new VspApi();
 
     protected SkilsBot(DefaultBotOptions botOptions) {
@@ -133,6 +135,13 @@ public class SkilsBot extends AbilityBot {
 
                     sendMessW(message);
                     state = States.setCat;
+                }else if(state == States.getMail) {
+                    mail = update.getMessage().getText();
+                    sendMailToAdmin();
+                    message = new SendMessage() // Create a SendMessage object with mandatory fields
+                            .setChatId(update.getMessage().getChatId())
+                            .setText("Спасибо");
+
                 }
 
             }
@@ -165,7 +174,8 @@ public class SkilsBot extends AbilityBot {
             }
             else if(state == States.setCat)
             {
-                clearInlineButtons(chat_id,Math.toIntExact(message_id),"Регистрируем сообщение по категории: Качество услуг отделения Сбербанка");
+                cat = callBack.getCat();
+                clearInlineButtons(chat_id,Math.toIntExact(message_id),"Регистрируем сообщение по категории: " + cat);
 
                 SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
                         .setChatId(update.getCallbackQuery().getMessage().getChatId())
@@ -177,7 +187,6 @@ public class SkilsBot extends AbilityBot {
             else if(state == States.inOffice)
             {
                 clearInlineButtons(chat_id,Math.toIntExact(message_id),"Определяем номер подразделения Сбербанка");
-
                 SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
                         .setChatId(update.getCallbackQuery().getMessage().getChatId())
                         .setText("Введите номер подразделения, в котором вы находитесь в формате 0000/00000");
@@ -187,12 +196,16 @@ public class SkilsBot extends AbilityBot {
             else if(state == States.setAnswChannel) {
                 if (callBack.getCat() != null) {
                     if (callBack.getCat().equalsIgnoreCase("setMail")) {
+                        clearInlineButtons(chat_id,Math.toIntExact(message_id),"Отправьте свой электронный адрес и Ваше обращение уйдет на рассмотрение. Наш сотрудник отправит Вам официальный ответ");
+                        state = States.getMail;
                     } else {
+                        clearInlineButtons(chat_id,Math.toIntExact(message_id),"Канал связи: " + (callBack.getCat().equalsIgnoreCase("setPhone")?"Звонок сотрудника":"Чат"));
                         SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
                                 .setChatId(update.getCallbackQuery().getMessage().getChatId())
                                 .setText("Нажмите 'Отправить' и Ваше обращение уйдет на рассмотрение. Наш сотрудник свяжется указанным Вами способом")
                                 .setReplyMarkup(getPhoneKeyEnd());
                         sendMessW(message);
+                        state = (callBack.getCat().equalsIgnoreCase("setPhone")?States.finalPhone:States.finalChat);
                     }
                 } else{
                     System.out.println("NullCat");
@@ -205,7 +218,12 @@ public class SkilsBot extends AbilityBot {
         Long admId = new Long(222966961);
         SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
                 .setChatId(admId)
-                .setText("We have an question from user");
+                .setText("Зарегистрировано новое обращение\n" +
+                        "Канал связи: " + (state == States.finalPhone?"Звонок":"Чат") +"\n"+
+                        "Категория: " + cat +"\n"+
+                        "Сообщение:\n" +
+                        "[текст сообщения]"
+                );
         SendContact sndCntc = new SendContact()
                 .setChatId(admId)
                 .setPhoneNumber(cnt.getPhoneNumber())
@@ -219,6 +237,18 @@ public class SkilsBot extends AbilityBot {
             e.printStackTrace();
         }
 
+    }
+    public void sendMailToAdmin() {
+        Long admId = new Long(222966961);
+        SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
+                .setChatId(admId)
+                .setText("Зарегистрировано новое обращение\n" +
+                        "Ответ на почту: " + mail +"\n"+
+                        "Сообщение:\n" +
+                        "[текст сообщения]"
+                );
+
+        sendMessW(message);
     }
 
     public void sendCategories(Long chatId){
