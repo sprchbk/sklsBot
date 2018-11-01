@@ -122,8 +122,6 @@ public class SkilsBot extends AbilityBot {
                                 .setText("Определено ВСП: "+office.getVspName()+"\n"+
                                         "Выберите интересующий вас раздел")
                                 .setReplyMarkup(new CategoriesNotInOffice().getMarkupInline());
-
-                        sendMessW(message);
                         state = States.setCat;
                     }
                 }  else if(state == States.notinOffice)
